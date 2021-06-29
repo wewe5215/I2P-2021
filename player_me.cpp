@@ -1,3 +1,10 @@
+//
+//  main.cpp
+//  mp3
+//
+//  Created by 朱季葳 on 2021/6/28.
+//
+
 #include <iostream>
 #include <fstream>
 #include <array>
@@ -6,9 +13,21 @@
 #include <ctime>
 #include <limits.h>
 #include <algorithm>
+using namespace std;
 int player;
 const int SIZE = 8;
-int state_value(std::array<std::array<int, SIZE>, SIZE> &board);
+const int weight[8][8] =
+{
+    { 65,  -3, 6, 4, 4, 6,  -3, 65},
+    {-3, -29, 3, 1, 1, 3, -29, -3},
+    {6,   3, 5, 3, 3, 5,   3,  6},
+    {4,   1, 3, 1, 1, 3,   1,  4},
+    {4,   1, 3, 1, 1, 3,   1,  4},
+    {6,   3, 5, 3, 3, 5,   3,  6},
+    {-3, -29, 3, 1, 1, 3, -29, -3},
+    {65,  -3, 6, 4, 4, 6,  -3, 65},
+    
+};
 
 std::array<std::array<int, SIZE>, SIZE> board;
 struct Point {
@@ -29,7 +48,8 @@ struct Point {
         return Point(x - rhs.x, y - rhs.y);
     }
 };
-int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing);
+int state_value(std::array<std::array<int, SIZE>, SIZE> &board);
+
 class OthelloBoard {
 public:
     enum SPOT_STATE {
@@ -37,6 +57,7 @@ public:
         BLACK = 1,
         WHITE = 2
     };
+    
     static const int SIZE = 8;
     const std::array<Point, 8> directions{{
         Point(-1, -1), Point(-1, 0), Point(-1, 1),
@@ -49,7 +70,16 @@ public:
     int cur_player;
     bool done;
     int winner;
-private:
+    OthelloBoard &operator =(const OthelloBoard& pre)
+    {
+        this->board=pre.board;
+        this->next_valid_spots=pre.next_valid_spots;
+        this->disc_count=pre.disc_count;
+        this->cur_player=pre.cur_player;
+        this->done=pre.done;
+        this->winner=pre.winner;
+        return *this;
+    }
     int get_next_player(int player) const {
         return 3 - player;
     }
@@ -108,7 +138,6 @@ private:
             }
         }
     }
-public:
     OthelloBoard() {
         reset();
     }
@@ -173,7 +202,7 @@ public:
 
 };
 std::vector<Point> next_valid_spots;
-
+int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard &pre);
 
 void read_board(std::ifstream& fin) {
     fin >> player;
@@ -193,22 +222,27 @@ void read_valid_spots(std::ifstream& fin) {
         next_valid_spots.push_back({x, y});
     }
 }
-int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing)
+int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard &pre)
 {
     OthelloBoard game;
+    game=pre;
+    int len1=game.next_valid_spots.size();
     game.put_disc(p);
+    int len2=game.next_valid_spots.size();
+    std::vector<Point> valid_spots=game.next_valid_spots;
     int value=0;
     if(depth==5||game.done)
     {
-        return    state_value(game.board);
+        value= state_value(game.board)+15*(len1-len2);
+        return value;
     }
-    std::vector<Point> next_valid_spots=game.get_valid_spots();
+    
     if(maximizing)
     {
         value=INT_MIN;
-        for(int i=0;i<next_valid_spots.size();i++)
+        for(auto i=0;i<len2;i++)
         {
-            value=std::max(value, alphabeta(next_valid_spots[i], depth+1, alpha, beta, false));
+            value=std::max(value, alphabeta(valid_spots[i], depth+1, alpha, beta, false,game));
             alpha=std::max(alpha, value);
             if(alpha>=beta)break;
         }
@@ -217,9 +251,9 @@ int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing)
     else
     {
         value=INT_MAX;
-        for(int i=0;i<next_valid_spots.size();i++)
+        for(auto i=0;i<len2;i++)
         {
-            value=std::min(value, alphabeta(next_valid_spots[i], depth+1, alpha, beta, true));
+            value=std::min(value, alphabeta(valid_spots[i], depth+1, alpha, beta, true,game));
             beta=std::min(value, beta);
             if(beta<=alpha)break;
         }
@@ -231,9 +265,12 @@ void write_valid_spot(std::ofstream& fout) {
     int n_valid_spots = next_valid_spots.size();
     int max=0;
     int index=0;
+    OthelloBoard game;
+    game.board=board;
+    game.next_valid_spots=next_valid_spots;
         for (int i = 0; i < n_valid_spots; i++)
         {
-            int value=alphabeta(next_valid_spots[i], 0, INT_MIN, INT_MAX, true);
+            int value=alphabeta(next_valid_spots[i], 0, -INT_MAX, INT_MAX, true,game);
             if(value>max)
             {
                 max=value;
@@ -248,20 +285,21 @@ void write_valid_spot(std::ofstream& fout) {
 int state_value(std::array<std::array<int, SIZE>, SIZE> &board)
 {
     int value=0;
-    int my_disc=0;
-    int oppo_disc=0;
     for(int i=0;i<SIZE;i++)
     {
         for(int j=0;j<SIZE;j++)
         {
             if(board[i][j]==player)
-                my_disc++;
-            
+            {
+                value+=weight[i][j];
+            }
             else if(board[i][j]==3-player)
-                oppo_disc++;
+            {
+                value-=weight[i][j];
+            }
         }
     }
-    value=my_disc-oppo_disc;
+    
     return value;
 }
 
