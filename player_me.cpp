@@ -13,20 +13,20 @@
 #include <ctime>
 #include <limits.h>
 #include <algorithm>
+#include <cmath>
 using namespace std;
 int player;
 const int SIZE = 8;
 const int weight[8][8] =
 {
-    { 65,  -3, 6, 4, 4, 6,  -3, 65},
-    {-3, -29, 3, 1, 1, 3, -29, -3},
-    {6,   3, 5, 3, 3, 5,   3,  6},
-    {4,   1, 3, 1, 1, 3,   1,  4},
-    {4,   1, 3, 1, 1, 3,   1,  4},
-    {6,   3, 5, 3, 3, 5,   3,  6},
-    {-3, -29, 3, 1, 1, 3, -29, -3},
-    {65,  -3, 6, 4, 4, 6,  -3, 65},
-    
+    { 4,-3, 2, 2, 2, 2,-3, 4},
+    {-3,-4,-1,-1,-1,-1,-4,-3},
+    { 2,-1, 1, 0, 0, 1,-1, 2},
+    { 2,-1, 0, 1, 1, 0,-1, 2},
+    { 2,-1, 0, 1, 1, 0,-1, 2},
+    { 2,-1, 1, 0, 0, 1,-1, 2},
+    {-3,-4,-1,-1,-1,-1,-4,-3},
+    { 4,-3, 2, 2, 2, 2,-3, 4},
 };
 
 std::array<std::array<int, SIZE>, SIZE> board;
@@ -224,6 +224,13 @@ void read_valid_spots(std::ifstream& fin) {
 }
 int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard &pre)
 {
+    /*if((Max Player Actual Mobility Value + Min Player Actual Mobility Value) !=0)
+    Actual Mobility Heuristic Value =
+    100* (Max Player Actual Mobility Value –Min Player Actual
+    Mobility Value)/
+    (Max Player Actual Mobility Value + Min Player Actual
+    else Mobility Value)
+    Actual Mobility Heuristic Value = 0*/
     OthelloBoard game;
     game=pre;
     int len1=game.next_valid_spots.size();
@@ -233,7 +240,26 @@ int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard
     int value=0;
     if(depth==5||game.done)
     {
-        value= state_value(game.board)+15*(len1-len2);
+        int mobility=0;
+        if(maximizing)
+        {
+            if(len1+len2!=0)
+            {
+                mobility=100*(len2-len1)/(len2+len1);
+            }
+            else
+                mobility=0;
+        }
+        else
+        {
+            if(len1+len2!=0)
+            {
+                mobility=100*(len1-len2)/(len1+len2);
+            }
+            else
+                mobility=0;
+        }
+        value=state_value(game.board)+mobility;
         return value;
     }
     
@@ -285,22 +311,54 @@ void write_valid_spot(std::ofstream& fout) {
 int state_value(std::array<std::array<int, SIZE>, SIZE> &board)
 {
     int value=0;
+    //coin parity
+    /*Coin Parity Heuristic Value =
+    100* (Max Player Coins –Min Player Coins)/
+    (Max Player Coins + Min Player Coins)*/
+    int me_player=0;
+    int enemy_player=0;
+    int coin_parity=0;
+    int corner_me=0;
+    int corner_enemy=0;
+    int stable_me=0;
+    int stable_enemy=0;
     for(int i=0;i<SIZE;i++)
     {
         for(int j=0;j<SIZE;j++)
         {
             if(board[i][j]==player)
             {
-                value+=weight[i][j];
+                me_player++;
+                stable_me+=weight[i][j];
             }
             else if(board[i][j]==3-player)
             {
-                value-=weight[i][j];
+                enemy_player++;
+                stable_enemy+=weight[i][j];
             }
+                
         }
     }
-    
-    return value;
+    coin_parity=100*(me_player-enemy_player)/(me_player+enemy_player);
+    int corner_value=0;
+    if(board[0][0]==player)corner_me++;
+    else if(board[0][0]==3-player)corner_enemy++;
+    if(board[0][7]==player)corner_me++;
+    else if(board[0][7]==3-player)corner_enemy++;
+    if(board[7][0]==player)corner_me++;
+    else if(board[7][0]==3-player)corner_enemy++;
+    if(board[7][7]==player)corner_me++;
+    else if(board[7][7]==3-player)corner_enemy++;
+    if(corner_me+corner_enemy!=0)
+        corner_value=100*(corner_me-corner_enemy)/(corner_me+corner_enemy);
+    else
+        corner_value=0;
+    int stable_value=0;
+    if(stable_me+stable_enemy!=0)
+        stable_value=100*(stable_me-stable_enemy)/(stable_me+stable_enemy);
+    else
+        stable_value=0;
+    return value=corner_value+stable_value+coin_parity;
 }
 
 int main(int, char** argv) {
