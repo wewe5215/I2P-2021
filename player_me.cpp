@@ -19,14 +19,14 @@ int player;
 const int SIZE = 8;
 int weight[8][8] =
 {
-         {400, -30, 11, 8, 8, 11, -30, 400},
-    	 {-30, -70, -4, 1, 1, -4, -70, -30},
-    	 {11, -4, 2, 2, 2, 2, -4, 11},
-    	 {8, 1, 2, -3, -3, 2, 1, 8},
-    	 {8, 1, 2, -3, -3, 2, 1, 8},
-    	 {11, -4, 2, 2, 2, 2, -4, 11},
-    	 {-30, -70, -4, 1, 1, -4, -70, -30},
-    	 {400, -30, 11, 8, 8, 11, -30, 400}
+          {400, -30, 11, 8, 8, 11, -30, 400},
+     	 {-30, -70, -4, 1, 1, -4, -70, -30},
+     	 {11, -4, 2, 2, 2, 2, -4, 11},
+     	 {8, 1, 2, -3, -3, 2, 1, 8},
+     	 {8, 1, 2, -3, -3, 2, 1, 8},
+     	 {11, -4, 2, 2, 2, 2, -4, 11},
+     	 {-30, -70, -4, 1, 1, -4, -70, -30},
+     	 {400, -30, 11, 8, 8, 11, -30, 400}
     
 };
 
@@ -292,7 +292,7 @@ void write_valid_spot(std::ofstream& fout) {
 int state_value(OthelloBoard& pre,int len1,int flag)
 {
     int my_value=0;int enemy_value=0;
-   //int total=pre.disc_count[player]+pre.disc_count[3-player];
+    int total=pre.disc_count[player]+pre.disc_count[3-player];
     int dx[8]={-1,-1,0,1,1,1,0,-1};
     int dy[8]={0,1,1,1,0,-1,-1,-1};
     int p=0,c=0,l=0,m=0,d=0,f=0;
@@ -397,14 +397,14 @@ int state_value(OthelloBoard& pre,int len1,int flag)
     //初期想辦法佔據重要位置，越多選擇越好
     
     //中期要想辦法增加穩定子，並把對手逼到牆角
-/*if(total>=25&&total<=50)value=(801.724 * c) + (500* l) + (50 * m) + (150 * f) + (100 * d)+p*10;   
+if(total<25)value= 10*p+802*c +382*l + 79*m+ 74*f+100*d;
 
-  //  
+ /* //  
 
 else if(total<25)value=1000*c+100*m+200*l+100*d+f*100;
-else
+
     value=(10 * p) + (1000 * c) + (382.026 * l) + (300 * m)  + (300 * d)+200*f;*/
-    value=10*p + 802*c +382*l + 79*m+ 74*f+10*d;
+  else  value=10*p + 802*c +382*l + 79*m+ 74*f+10*d;
     return value;
     
     //10*p + 802*c +382*l + 79*m+ 74*f+10*d;
