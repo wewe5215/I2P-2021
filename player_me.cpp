@@ -1,10 +1,3 @@
-//
-//  main.cpp
-//  mp3
-//
-//  Created by 朱季葳 on 2021/6/28.
-//
-
 #include <iostream>
 #include <fstream>
 #include <array>
@@ -20,13 +13,13 @@ const int SIZE = 8;
 int weight[8][8] =
 {
           {400, -30, 11, 8, 8, 11, -30, 400},
-     	 {-30, -70, -4, 1, 1, -4, -70, -30},
-     	 {11, -4, 2, 2, 2, 2, -4, 11},
-     	 {8, 1, 2, -3, -3, 2, 1, 8},
-     	 {8, 1, 2, -3, -3, 2, 1, 8},
-     	 {11, -4, 2, 2, 2, 2, -4, 11},
-     	 {-30, -70, -4, 1, 1, -4, -70, -30},
-     	 {400, -30, 11, 8, 8, 11, -30, 400}
+          {-30, -70, -4, 1, 1, -4, -70, -30},
+          {11, -4, 2, 2, 2, 2, -4, 11},
+          {8, 1, 2, -3, -3, 2, 1, 8},
+          {8, 1, 2, -3, -3, 2, 1, 8},
+          {11, -4, 2, 2, 2, 2, -4, 11},
+          {-30, -70, -4, 1, 1, -4, -70, -30},
+          {400, -30, 11, 8, 8, 11, -30, 400}
     
 };
 
@@ -249,6 +242,7 @@ int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard
         value=INT_MIN;
         for(auto i=0;i<len2;i++)
         {
+            
             value=std::max(value, alphabeta(valid_spots[i], depth+1, alpha, beta, false,game));
             alpha=std::max(alpha, value);
             if(alpha>=beta)break;
@@ -260,6 +254,7 @@ int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard
         value=INT_MAX;
         for(auto i=0;i<len2;i++)
         {
+            
             value=std::min(value, alphabeta(valid_spots[i], depth+1, alpha, beta, true,game));
             beta=std::min(value, beta);
             if(beta<=alpha)break;
@@ -277,6 +272,7 @@ void write_valid_spot(std::ofstream& fout) {
     game.next_valid_spots=next_valid_spots;
         for (int i = 0; i < n_valid_spots; i++)
         {
+           
             int value=alphabeta(next_valid_spots[i], 0, -INT_MAX, INT_MAX, true,game);
             if(value>max)
             {
@@ -397,14 +393,15 @@ int state_value(OthelloBoard& pre,int len1,int flag)
     //初期想辦法佔據重要位置，越多選擇越好
     
     //中期要想辦法增加穩定子，並把對手逼到牆角
-if(total<25)value= 10*p+802*c +382*l + 79*m+ 74*f+100*d;
+//if(total<25)
+//(3,5)
+ //100m-->(2,3)
+ //if(total<25)value= 10*p+802*c +382*l + 79*m+ 74*f+100*d;
+ //else  value=10*p + 802*c +382*l + 79*m+ 74*f+10*d;
+if(total<25)value= 10*p+802*c +382*l + 79*m+ 74*f+50*d;
 
- /* //  
-
-else if(total<25)value=1000*c+100*m+200*l+100*d+f*100;
-
-    value=(10 * p) + (1000 * c) + (382.026 * l) + (300 * m)  + (300 * d)+200*f;*/
-  else  value=10*p + 802*c +382*l + 79*m+ 74*f+10*d;
+  /* //  value=(10 * p) + (1000 * c) + (382.026 * l) + (300 * m)  + (300 * d)+200*f;*/
+ else  value=10*p + 802*c +390*l + 100*m+ 200*f+50*d;
     return value;
     
     //10*p + 802*c +382*l + 79*m+ 74*f+10*d;
@@ -419,3 +416,4 @@ int main(int, char** argv) {
     fout.close();
     return 0;
 }
+
