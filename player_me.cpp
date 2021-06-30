@@ -19,14 +19,14 @@ int player;
 const int SIZE = 8;
 int weight[8][8] =
 {
-                    {200 , -100, 100,  50,  50, 100, -100,  200},
-                    {-100, -200, -50, -50, -50, -50, -200, -100},
-                    {100 ,  -50, 100,   0,   0, 100,  -50,  100},
-                    {50  ,  -50,   0,   0,   0,   0,  -50,   50},
-                    {50  ,  -50,   0,   0,   0,   0,  -50,   50},
-                    {100 ,  -50, 100,   0,   0, 100,  -50,  100},
-                    {-100, -200, -50, -50, -50, -50, -200, -100},
-                    {200 , -100, 100,  50,  50, 100, -100,  200}
+         {400, -30, 11, 8, 8, 11, -30, 400},
+    	 {-30, -70, -4, 1, 1, -4, -70, -30},
+    	 {11, -4, 2, 2, 2, 2, -4, 11},
+    	 {8, 1, 2, -3, -3, 2, 1, 8},
+    	 {8, 1, 2, -3, -3, 2, 1, 8},
+    	 {11, -4, 2, 2, 2, 2, -4, 11},
+    	 {-30, -70, -4, 1, 1, -4, -70, -30},
+    	 {400, -30, 11, 8, 8, 11, -30, 400}
     
 };
 
@@ -227,13 +227,6 @@ void read_valid_spots(std::ifstream& fin) {
 }
 int alphabeta(Point& p,int depth,int alpha,int beta,bool maximizing,OthelloBoard &pre)
 {
-    /*if((Max Player Actual Mobility Value + Min Player Actual Mobility Value) !=0)
-    Actual Mobility Heuristic Value =
-    100* (Max Player Actual Mobility Value –Min Player Actual
-    Mobility Value)/
-    (Max Player Actual Mobility Value + Min Player Actual
-    else Mobility Value)
-    Actual Mobility Heuristic Value = 0*/
     OthelloBoard game;
     game=pre;
     int len1=game.next_valid_spots.size();
@@ -298,74 +291,123 @@ void write_valid_spot(std::ofstream& fout) {
 }
 int state_value(OthelloBoard& pre,int len1,int flag)
 {
-    
-    int coin_parity=0;
-    int corner_me=0;
-    int corner_enemy=0;
-    int stable_value=0;
-    int state_me=0;
-    int state_enemy=0;
-    int mobility=0;
-    int total=pre.disc_count[player]+pre.disc_count[3-player];
-    //mobility
-    int len2=pre.next_valid_spots.size();
-    if(flag)mobility=100*(len2-len1)/(len1+len2);
-    
-    else mobility=100*(len1-len2)/(len1+len2);
-    //disc diff
-    coin_parity=100*(pre.disc_count[player]-pre.disc_count[3-player])/(pre.disc_count[player]+pre.disc_count[3-player]);
-    
-    //counter
-    int corner_value=0;
-    if(pre.board[0][0]!=0)
+    int my_value=0;int enemy_value=0;
+   //int total=pre.disc_count[player]+pre.disc_count[3-player];
+    int dx[8]={-1,-1,0,1,1,1,0,-1};
+    int dy[8]={0,1,1,1,0,-1,-1,-1};
+    int p=0,c=0,l=0,m=0,d=0,f=0;
+    for(int i=0;i<8;i++)
     {
-        if(pre.board[0][0]==player)corner_me++;
-        else if(pre.board[0][0]==3-player)corner_enemy++;
-        for(int i=0;i<3;i++)for(int j=0;j<=3;j++)weight[i][j]=0;
-    }
-    if(pre.board[0][7]!=0)
-    {
-        if(pre.board[0][7]==player)corner_me++;
-        else if(pre.board[0][7]==3-player)corner_enemy++;
-        for(int i=0;i<3;i++)for(int j=4;j<=7;j++)weight[i][j]=0;
-    }
-    if(pre.board[7][0]!=0)
-    {
-        if(pre.board[7][0]==player)corner_me++;
-        else if(pre.board[7][0]==3-player)corner_enemy++;
-        for(int i=5;i<8;i++)for(int j=0;j<=3;j++)weight[i][j]=0;
-    }
-    if(pre.board[7][7]!=0)
-    {
-        if(pre.board[7][7]==player)corner_me++;
-        else if(pre.board[7][7]==3-player)corner_enemy++;
-        for(int i=5;i<8;i++)for(int j=4;j<=7;j++)weight[i][j]=0;
-    }
-    corner_value=100*(corner_me-corner_enemy)/(corner_me+corner_enemy);
-    //stable
-    for(int i=0;i<SIZE;i++)
+        for(int j=0;j<8;j++)
         {
-            for(int j=0;j<SIZE;j++)
+            if(pre.board[i][j]==player)d+=weight[i][j];
+            else if(pre.board[i][j]==3-player)d-=weight[i][j];
+           if(pre.board[i][j]!=0)
             {
-                
-                if(pre.board[i][j]==player)
+                for(int k=0;k<8;k++)
                 {
-                    state_me+=weight[i][j];
+                    int x=i+dx[k];int y=j+dy[k];
+                    if(x>=0&&x<8&&y>=0&&y<8&&pre.board[x][y]==0)
+                    {
+                        if(pre.board[i][j]==player)my_value++;
+                        else if(pre.board[i][j]==3-player)enemy_value++;
+                        break;
+                    }
                 }
-                else if(pre.board[i][j]==3-player)
-                {
-                    state_enemy+=weight[i][j];
-                }
-                
             }
         }
-    stable_value=(state_me-state_enemy)/(state_me+state_enemy);
-   if(total<20)
-       return 1000*corner_value+50*mobility+stable_value;
-    else if(total<=58)
-        return 1000*corner_value+2*mobility+stable_value+10*coin_parity;
+    }
+    
+        p=100*(pre.disc_count[player]-pre.disc_count[3-player]);
+    
+    if(my_value>enemy_value)
+        f=-100*my_value/(my_value+enemy_value);
+    else if(enemy_value>my_value)
+        f=100*enemy_value/(my_value+enemy_value);
+
+    
+    // Corner occupancy
+    my_value=enemy_value=0;
+        if(pre.board[0][0] == player) my_value++;
+        else if(pre.board[0][0] == 3-player) enemy_value+=10;
+        if(pre.board[0][7] == player) my_value++;
+        else if(pre.board[0][7] == 3-player) enemy_value+=10;
+        if(pre.board[7][0] == player) my_value++;
+        else if(pre.board[7][0] == 3-player) enemy_value+=10;
+        if(pre.board[7][7] == player) my_value++;
+        else if(pre.board[7][7] == 3-player) enemy_value+=10;
+        c = 25 * (my_value-enemy_value);
+
+    // Corner closeness
+    my_value=enemy_value=0;
+        if(pre.board[0][0] == 0)   {
+            if(pre.board[0][1] == player) my_value+=10;
+            else if(pre.board[0][1] == 3-player) enemy_value++;
+            if(pre.board[1][1] == player) my_value+=10;
+            else if(pre.board[1][1] == 3-player) enemy_value++;
+            if(pre.board[1][0] == player) my_value+=10;
+            else if(pre.board[1][0] == 3-player) enemy_value++;
+        }
+    if(pre.board[0][7] == 0)   {
+        if(pre.board[0][6] == player) my_value+=10;
+        else if(pre.board[0][6] == 3-player) enemy_value++;
+        if(pre.board[1][6] == player) my_value+=10;
+        else if(pre.board[1][6] == 3-player) enemy_value++;
+        if(pre.board[1][7] == player) my_value+=10;
+        else if(pre.board[1][7] == 3-player) enemy_value++;
+    }
+    if(pre.board[7][0] == 0)   {
+        if(pre.board[7][1] == player) my_value+=10;
+        else if(pre.board[7][1] == 3-player) enemy_value++;
+        if(pre.board[6][1] == player) my_value+=10;
+        else if(pre.board[6][1] == 3-player) enemy_value++;
+        if(pre.board[6][0] == player) my_value+=10;
+        else if(pre.board[6][0] == 3-player) enemy_value++;
+    }
+    
+    if(pre.board[7][7] ==0)   {
+        if(pre.board[6][7] == player) my_value+=10;
+        else if(pre.board[6][7] == 3-player) enemy_value++;
+        if(pre.board[6][6] == player) my_value+=10;
+        else if(pre.board[6][6] == 3-player) enemy_value++;
+        if(pre.board[7][6] == player) my_value+=10;
+        else if(pre.board[7][6] == 3-player) enemy_value++;
+    }
+    l = -12.5 * (my_value-enemy_value);
+    if(flag)
+    {
+        my_value=pre.next_valid_spots.size();
+        enemy_value=len1;
+    }
     else
-        return 1000*corner_value+100*mobility+stable_value*5+500*coin_parity;
+    {
+        my_value=len1;
+        enemy_value=pre.next_valid_spots.size();
+    }
+   
+    if(my_value>enemy_value)
+        m=100*my_value/(my_value+enemy_value);
+    else if(my_value<enemy_value)
+        m=-100*enemy_value/(my_value+enemy_value);
+    
+    int value=0;
+    //c:corner occupy //p:what have the most amount of discs
+    //m:modibility    //l:corner closeness
+    //d:weight         //f:防止一整片被佔據
+    //初期想辦法佔據重要位置，越多選擇越好
+    
+    //中期要想辦法增加穩定子，並把對手逼到牆角
+/*if(total>=25&&total<=50)value=(801.724 * c) + (500* l) + (50 * m) + (150 * f) + (100 * d)+p*10;   
+
+  //  
+
+else if(total<25)value=1000*c+100*m+200*l+100*d+f*100;
+else
+    value=(10 * p) + (1000 * c) + (382.026 * l) + (300 * m)  + (300 * d)+200*f;*/
+    value=10*p + 802*c +382*l + 79*m+ 74*f+10*d;
+    return value;
+    
+    //10*p + 802*c +382*l + 79*m+ 74*f+10*d;
 }
 int main(int, char** argv) {
     std::ifstream fin(argv[1]);
