@@ -26,7 +26,6 @@ typedef struct ASTUnit {
     int val; // record the integer value or variable name
     struct ASTUnit *lhs, *mid, *rhs;
 } AST;
-
 /// utility interfaces
 
 // err marco should be used when a expression error occurs.
@@ -39,7 +38,7 @@ typedef struct ASTUnit {
     exit(0);\
 }
 // You may set DEBUG=1 to debug. Remember setting back to 0 before submit.
-#define DEBUG 0
+#define DEBUG 1
 // Split the input char array into token linked list.
 Token *lexer(const char *in);
 // Create a new token.
@@ -75,17 +74,21 @@ void freeAST(AST *now);
 void token_print(Token *in, size_t len);
 // Print AST tree.
 void AST_print(AST *head);
-
+int table[3];
 char input[MAX_LENGTH];
 
 int main() {
+    table[0] = 2;
+    table[1] = 3;
+    table[2] = 5;
     while (fgets(input, MAX_LENGTH, stdin) != NULL) {
         Token *content = lexer(input);
         size_t len = token_list_to_arr(&content);
         if (len == 0) continue;
         AST *ast_root = parser(content, len);
         semantic_check(ast_root);
-        codegen(ast_root);
+        AST_print(ast_root);
+        // codegen(ast_root);
         free(content);
         freeAST(ast_root);
     }
@@ -103,8 +106,10 @@ Token *lexer(const char *in) {
             //atoi will read the next constants without going to in[i+1]
             while (in[i+1] && isdigit(in[i+1])) i++;
         }
-        else if ('x' <= in[i] && in[i] <= 'z') // variable
+        else if ('x' <= in[i] && in[i] <= 'z'){// variable
             (*now) = new_token(IDENTIFIER, in[i]);
+        }
+            
         else switch (in[i]) {
             case '=':
                 (*now) = new_token(ASSIGN, 0);
@@ -237,16 +242,16 @@ AST *parse(Token *arr, int l, int r, GrammarState S) {
         case UNARY_EXPR:
             // TODO: Implement UNARY_EXPR.
             // hint: Take POSTFIX_EXPR as reference.
-            if (arr[r - 1].kind == PREINC || arr[r - 1].kind == PREDEC) {
+            if (arr[l].kind == PREINC || arr[l].kind == PREDEC) {
                 // translate "PREINC", "PREDEC" into "POSTINC", "POSTDEC"
-                now = new_AST(arr[r - 1].kind - PREINC + POSTINC, 0);
-                now->mid = parse(arr, l + 1, r , UNARY_EXPR);
+                now = new_AST(arr[l].kind , 0);
+                now->mid = parse(arr, l+1, r , UNARY_EXPR);
                 return now;
             }
-            else if (arr[r - 1].kind == PLUS || arr[r - 1].kind == MINUS) {
+            else if (arr[l].kind == PLUS || arr[l].kind == MINUS) {
                 // translate "PLUS", "MINUS" into "ADD", "SUB"
-                now = new_AST(arr[r - 1].kind - PLUS + ADD, 0);
-                now->mid = parse(arr, l + 1, r , UNARY_EXPR);
+                now = new_AST(arr[l].kind, 0);
+                now->mid = parse(arr, l+1, r , UNARY_EXPR);
                 return now;
             }
             return parse(arr, l, r, POSTFIX_EXPR);
@@ -342,12 +347,58 @@ void semantic_check(AST *now) {
     
 }
 int reg[8][2];
+//reg[i][0] -->record if this reg is used or not
+//reg[i][1] -->value
 int identifier_num = 3;
+void init_reg(void){
+    for(int i = 0;i < 8;i ++){
+        reg[i][0] = reg[i][1] = 0;
+    }
+}
 int codegen(AST *root) {
     // TODO: Implement your codegen in your own way.
     // You may modify the function parameter or the return type, even the whole structure as you wish.
-    
-    
+    int i, j;
+    int return_val = 0;
+    int lv, rv;
+    if(root != NULL){
+        switch (root->kind) {
+            case IDENTIFIER:
+            case CONSTANT:
+                for(i = 0;i < 8;i ++){
+                    if(reg[i][0] == 0){
+                        reg[i][0] = 1;//recorded
+                        
+                        if(root->kind == IDENTIFIER){
+                            j = root->val - 'x';
+                            reg[i][1] = table[j];
+                            printf("load r%d [%d]\n", i, j*4);
+                        }
+                        else{
+                            reg[i][1] = root->val;
+                            printf("add r%d 0 %d\n", i, root->val);
+                        }
+                        return_val = i;
+                        break;
+                    }
+                }
+                break;
+            case ASSIGN:
+            case ADD:
+            case SUB:
+            case MUL:
+            case DIV:
+            case REM:
+            
+            case LPAR:
+            case RPAR:
+            case PLUS:
+            case MINUS:
+            default:
+                break;
+        }
+    }
+    return return_val;
 }
 
 void freeAST(AST *now) {
