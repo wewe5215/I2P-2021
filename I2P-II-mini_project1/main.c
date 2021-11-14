@@ -38,7 +38,7 @@ typedef struct ASTUnit {
     exit(0);\
 }
 // You may set DEBUG=1 to debug. Remember setting back to 0 before submit.
-#define DEBUG 1
+#define DEBUG 0
 // Split the input char array into token linked list.
 Token *lexer(const char *in);
 // Create a new token.
@@ -87,8 +87,8 @@ int main() {
         if (len == 0) continue;
         AST *ast_root = parser(content, len);
         semantic_check(ast_root);
-        AST_print(ast_root);
-        // codegen(ast_root);
+        //AST_print(ast_root);
+        codegen(ast_root);
         free(content);
         freeAST(ast_root);
     }
@@ -243,7 +243,7 @@ AST *parse(Token *arr, int l, int r, GrammarState S) {
             // TODO: Implement UNARY_EXPR.
             // hint: Take POSTFIX_EXPR as reference.
             if (arr[l].kind == PREINC || arr[l].kind == PREDEC) {
-                // translate "PREINC", "PREDEC" into "POSTINC", "POSTDEC"
+                // translate "PREINC", "PREDEC" into "POSTINC","POSTDEC"
                 now = new_AST(arr[l].kind , 0);
                 now->mid = parse(arr, l+1, r , UNARY_EXPR);
                 return now;
@@ -360,7 +360,8 @@ int codegen(AST *root) {
     // You may modify the function parameter or the return type, even the whole structure as you wish.
     int i, j;
     int return_val = 0;
-    int lv, rv;
+    int lv, rv, mv;
+    AST *tmp = NULL;
     if(root != NULL){
         switch (root->kind) {
             case IDENTIFIER:
@@ -383,19 +384,95 @@ int codegen(AST *root) {
                     }
                 }
                 break;
-            case ASSIGN:
+            
             case ADD:
             case SUB:
             case MUL:
             case DIV:
             case REM:
-            
+                lv = codegen(root->lhs);
+                rv = codegen(root->rhs);
+                if(root->kind == ADD){
+                    printf("add r%d r%d r%d\n", lv, lv, rv);
+                    reg[rv][0] = 0;
+                    reg[lv][1] = reg[lv][1] + reg[rv][1];
+                    return lv;
+                }
+                else if(root->kind == SUB){
+                    printf("sub r%d r%d r%d\n", lv, lv, rv);
+                    reg[rv][0] = 0;
+                    reg[lv][1] = reg[lv][1] - reg[rv][1];
+                    return lv;
+                }
+                else if(root->kind == MUL){
+                    printf("mul r%d r%d r%d\n", lv, lv, rv);
+                    reg[rv][0] = 0;
+                    reg[lv][1] = reg[lv][1] * reg[rv][1];
+                    return lv;
+                }
+                else if(root->kind == DIV){
+                    printf("div r%d r%d r%d\n", lv, lv, rv);
+                    reg[rv][0] = 0;
+                    reg[lv][1] = reg[lv][1] / reg[rv][1];
+                    return lv;
+                }
+                else if(root->kind == REM){
+                    printf("rem r%d r%d r%d\n", lv, lv, rv);
+                    reg[rv][0] = 0;
+                    reg[lv][1] = reg[lv][1] % reg[rv][1];
+                    return lv;
+                }
+            case PREINC:
+            case POSTINC:
+                mv = codegen(root->mid);
+                reg[mv][1]++;
+                return mv;
+            case PREDEC:
+            case POSTDEC:
+                mv = codegen(root->mid);
+                reg[mv][1]--;
+                return mv;
+            case PLUS:
+                mv = codegen(root->mid);
+                reg[mv][1] = 1*reg[mv][1];
+                return mv;
+            case MINUS:
+                mv = codegen(root->mid);
+                reg[mv][1] = (-1)*reg[mv][1];
+                return mv;
             case LPAR:
             case RPAR:
-            case PLUS:
-            case MINUS:
+                while (root->kind == LPAR || root->kind ==RPAR) {
+                    root = root->mid;
+                }
+                mv = codegen(root);
+                return mv;
+            case ASSIGN:
+                tmp = root->lhs;
+                rv = codegen(root->rhs);
+                //refresh the value of identifier
+                while (tmp->kind != IDENTIFIER) {
+                    tmp = tmp->mid;
+                }
+                for(i = 0;i < 8;i ++){
+                    if(reg[i][0] == 0){
+                        reg[i][0] = 1;//recorded
+                        
+                        if(tmp->kind == IDENTIFIER){
+                            j = tmp->val - 'x';
+                            table[j] = reg[rv][1];
+                            reg[i][1] = table[j];
+                            
+                        }
+                        break;
+                    }
+                }
+                reg[rv][0] = 0;
+                printf("store [%d] r%d\n",j*4, rv);
+                return i;
             default:
-                break;
+                return_val = 0;
+                
         }
     }
     return return_val;
