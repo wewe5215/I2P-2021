@@ -262,6 +262,7 @@ AST *parse(Token *arr, int l, int r, GrammarState S) {
                 now->mid = parse(arr, l, r - 1, POSTFIX_EXPR);
                 return now;
             }
+            
             return parse(arr, l, r, PRI_EXPR);
         case PRI_EXPR:
             if (findNextSection(arr, l, r, condRPAR) == r) {
