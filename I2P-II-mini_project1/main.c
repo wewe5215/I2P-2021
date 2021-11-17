@@ -78,9 +78,9 @@ int table[3];
 char input[MAX_LENGTH];
 
 int main() {
-    table[0] = 2;
-    table[1] = 3;
-    table[2] = 5;
+    table[0] = 0;
+    table[1] = 0;
+    table[2] = 0;
     while (fgets(input, MAX_LENGTH, stdin) != NULL) {
         Token *content = lexer(input);
         size_t len = token_list_to_arr(&content);
@@ -345,9 +345,12 @@ void semantic_check(AST *now) {
         }
            
     }
+    semantic_check(now->lhs);
+    semantic_check(now->mid);
+    semantic_check(now->rhs);
     
 }
-int reg[8][2];
+int reg[256][2];
 //reg[i][0] -->record if this reg is used or not
 //reg[i][1] -->value
 int identifier_num = 3;
@@ -367,7 +370,7 @@ int codegen(AST *root) {
         switch (root->kind) {
             case IDENTIFIER:
             case CONSTANT:
-                for(i = 0;i < 8;i ++){
+                for(i = 0;i < 256;i ++){
                     if(reg[i][0] == 0){
                         reg[i][0] = 1;//recorded
                         
@@ -426,12 +429,30 @@ int codegen(AST *root) {
             case PREINC:
             case POSTINC:
                 mv = codegen(root->mid);
+                printf("add r%d r%d 1\n", mv, mv);
                 reg[mv][1]++;
+                tmp = root->mid;
+                while (tmp->kind != IDENTIFIER) {
+                    tmp = tmp->mid;
+                }
+                if(tmp->kind == IDENTIFIER){
+                    table[tmp->val - 'x'] = reg[mv][1];
+                }
+                
+                
                 return mv;
             case PREDEC:
             case POSTDEC:
                 mv = codegen(root->mid);
+                printf("sub r%d r%d 1\n", mv, mv);
                 reg[mv][1]--;
+                tmp = root->mid;
+                while (tmp->kind != IDENTIFIER) {
+                    tmp = tmp->mid;
+                }
+                if(tmp->kind == IDENTIFIER){
+                    table[tmp->val - 'x'] = reg[mv][1];
+                }
                 return mv;
             case PLUS:
                 mv = codegen(root->mid);
@@ -451,26 +472,26 @@ int codegen(AST *root) {
             case ASSIGN:
                 tmp = root->lhs;
                 rv = codegen(root->rhs);
+                reg[rv][0] = 0;
                 //refresh the value of identifier
                 while (tmp->kind != IDENTIFIER) {
                     tmp = tmp->mid;
                 }
-                for(i = 0;i < 8;i ++){
+                if(tmp->kind == IDENTIFIER){
+                    
+                    j = tmp->val - 'x';
+                    table[j] = reg[rv][1];
+                }
+                for(i = 0;i < 256;i ++){
                     if(reg[i][0] == 0){
-                        reg[i][0] = 1;//recorded
-                        
-                        if(tmp->kind == IDENTIFIER){
-                            j = tmp->val - 'x';
-                            table[j] = reg[rv][1];
-                            reg[i][1] = table[j];
-                            
-                        }
+                        reg[i][0] = 1;
+                        reg[i][1] = table[j];
                         break;
                     }
                 }
-                reg[rv][0] = 0;
                 printf("store [%d] r%d\n",j*4, rv);
-                return i;
+                return_val = i;
+                break;
             default:
                 return_val = 0;
                 
